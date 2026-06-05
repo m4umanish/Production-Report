@@ -725,6 +725,19 @@ function setUpdated(id) {
     if (el) el.textContent = '🕐 Last updated: ' + new Date().toLocaleString('en-IN');
 }
 
+function normalizeDate(val) {
+    if (!val || val === '' || val === '—') return '';
+    const str = String(val).trim();
+    if (/^\d{2}-\d{2}-\d{4}$/.test(str)) {
+        const p = str.split('-');
+        return `${p[2]}-${p[1]}-${p[0]}`;
+    }
+    if (/^\d{4}-\d{2}-\d{2}$/.test(str)) {
+        return str;
+    }
+    return str;
+}
+
 // ============================================================
 // ✅ FISH PLATE
 // ============================================================
@@ -760,9 +773,16 @@ function applyFP() {
     const from = document.getElementById('fp-from').value;
     const to   = document.getElementById('fp-to').value;
     const mac  = document.getElementById('fp-mac').value.trim().toLowerCase();
-    if (from) f = f.filter(r => r.date >= from);
-    if (to)   f = f.filter(r => r.date <= to);
-    if (mac)  f = f.filter(r => r.machine.toLowerCase().includes(mac));
+
+    if (from || to) {
+        f = f.filter(r => {
+            const rDate = normalizeDate(r.date);
+            if (from && rDate < from) return false;
+            if (to   && rDate > to)   return false;
+            return true;
+        });
+    }
+    if (mac) f = f.filter(r => r.machine.toLowerCase().includes(mac));
     renderFP(f);
 }
 function clearFP() {
@@ -861,11 +881,24 @@ function switchC(c) {
 }
 function applyML() {
     let f = [...DATA.metalliner];
+    const from    = document.getElementById('ml-from').value;
+    const to      = document.getElementById('ml-to').value;
     const client  = document.getElementById('ml-client').value.trim().toLowerCase();
     const drawing = document.getElementById('ml-drawing').value.trim().toLowerCase();
-    if (mlContractor !== 'all') f = f.filter(r => r.contractor.toUpperCase() === mlContractor);
-    if (client)  f = f.filter(r => r.client.toLowerCase().includes(client));
-    if (drawing) f = f.filter(r => r.drawingNo.toLowerCase().includes(drawing));
+
+    if (mlContractor !== 'all') {
+        f = f.filter(r => r.contractor.toUpperCase() === mlContractor);
+    }
+    if (from || to) {
+        f = f.filter(r => {
+            const rDate = normalizeDate(r.date);
+            if (from && rDate < from) return false;
+            if (to   && rDate > to)   return false;
+            return true;
+        });
+    }
+    if (client)  f = f.filter(r => String(r.client).toLowerCase().includes(client));
+    if (drawing) f = f.filter(r => String(r.drawingNo).toLowerCase().includes(drawing));
     renderML(f);
 }
 function clearML() {
@@ -1028,10 +1061,17 @@ function applyRM() {
     const to   = document.getElementById('rm-to').value;
     const drw  = document.getElementById('rm-drawing').value.trim().toLowerCase();
     const mat  = document.getElementById('rm-material').value.trim().toLowerCase();
-    if (from) f = f.filter(r => r.date >= from);
-    if (to)   f = f.filter(r => r.date <= to);
-    if (drw)  f = f.filter(r => r.drawingNo.toLowerCase().includes(drw));
-    if (mat)  f = f.filter(r => r.rawMaterial.toLowerCase().includes(mat));
+
+    if (from || to) {
+        f = f.filter(r => {
+            const rDate = normalizeDate(r.date);
+            if (from && rDate < from) return false;
+            if (to   && rDate > to)   return false;
+            return true;
+        });
+    }
+    if (drw) f = f.filter(r => String(r.drawingNo).toLowerCase().includes(drw));
+    if (mat) f = f.filter(r => String(r.rawMaterial).toLowerCase().includes(mat));
     renderRM(f);
 }
 function clearRM() {
