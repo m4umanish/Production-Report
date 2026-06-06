@@ -616,13 +616,9 @@
 
 <script>
 // ============================================================
-// ⚠️ APNE APPS SCRIPT URLs YAHAN DAALO
+// ✅ SINGLE API URL WITH ACTION PARAMETERS
 // ============================================================
-const API_URLS = {
-    fishplate:   'https://script.google.com/macros/s/AKfycbySRVQgJBUXTrWRKVhbo4J15tzVWttZwiB4tkMHfuTmR-ChiOwSO57oG9QrOPAcXEfN/exec',
-    metalliner:  'https://script.google.com/macros/s/AKfycbzqviEDYlMUUIgbvGW4HJi_oUcAFB9qsZydK0ACdgsBop1f9lTuo82BVKkU1aLPws0ANQ/exec',
-    rollingmill: 'https://script.google.com/macros/s/AKfycbwUqcA3z8QilE6Goxfo5nQitYcVyTP9E_7n46rwFyjtKYbzJc8D5-a9h6S0xVOg9RX1hA/exec'
-};
+const BASE_API_URL = 'https://script.google.com/macros/s/AKfycbwsuS2DZrTDc95qpLpQR6nvQFfNlYcEboUIltoRLNflfrw1_TeBLMsaPz-gI_31h6QL/exec';
 
 const USERS = [
     { username: 'Admin',   password: '1234'         },
@@ -697,13 +693,11 @@ function switchPanel(name) {
 }
 
 // ============================================================
-// FETCH HELPER
+// ✅ FETCH HELPER - WITH ACTION PARAMETER
 // ============================================================
-async function fetchSheet(type) {
-    const url = API_URLS[type];
-    if (!url || url.includes('SCRIPT_URL')) {
-        throw new Error('API URL set nahi hai! API_URLS object mein apna Apps Script URL daalo.');
-    }
+async function fetchSheet(action) {
+    // action = 'getProduction', 'getProductionData', or 'getProductionData2'
+    const url = `${BASE_API_URL}?action=${action}`;
     const res = await fetch(url);
     if (!res.ok) throw new Error('HTTP Error: ' + res.status);
     const json = await res.json();
@@ -739,16 +733,14 @@ function normalizeDate(val) {
 }
 
 // ============================================================
-// ✅ FISH PLATE
+// ✅ FISH PLATE - Uses getProduction()
 // ============================================================
 async function loadFishPlate(force=false) {
     if (DATA.fishplate.length && !force) { renderFP(DATA.fishplate); return; }
     setLoading('fp-refresh-btn', true);
     showState('fp-table','loading','🐟','Google Sheets se data aa raha hai...');
     try {
-        const json = await fetchSheet('fishplate');
-        // Fish Plate: Row 1 = Headers, Data from Row 2
-        // Headers: Production Date | ChamferingMc1 | Qty | Total Finishing | Total Labour
+        const json = await fetchSheet('getProduction');
         DATA.fishplate = json.data.map(r => {
             const keys = Object.keys(r);
             return {
@@ -829,26 +821,18 @@ function renderFP(rows) {
 }
 
 // ============================================================
-// ✅ METAL LINER — FIXED DUAL TABLE PARSING
+// ✅ METAL LINER - Uses getProductionData()
 // ============================================================
 async function loadMetalLiner(force=false) {
     if (DATA.metalliner.length && !force) { renderML(DATA.metalliner); return; }
     setLoading('ml-refresh-btn', true);
     showState('ml-table','loading','🔩','Google Sheets se data aa raha hai...');
     try {
-        const json = await fetchSheet('metalliner');
-
-        // ✅ Backend ne already VKS aur TLN alag karke bheja hai
-        // Har row me 'contractor' field hoga (VKS ya TLN)
-        // Aur baaki fields header names ke according honge
+        const json = await fetchSheet('getProductionData');
 
         DATA.metalliner = json.data.map(r => {
             const contractor = r['contractor'] || '';
             const keys = Object.keys(r).filter(k => k !== 'contractor');
-
-            // Keys order:
-            // [0]=ProductionDate [1]=Client [2]=DrawingNo [3]=Contractor(column)
-            // [4]=Cutting [5]=Grinding [6]=TotalStamping [7]=TotalPacking(bags) [8]=TotalLabour [9]=RmConsumed
 
             return {
                 contractor:    contractor,
@@ -924,7 +908,6 @@ function renderML(rows) {
 
     if (!rows.length) { showState('ml-table','empty','🔩','Koi record nahi mila'); return; }
 
-    // ✅ VKS aur TLN alag-alag groups mein dikhao
     const vksRows = rows.filter(r => r.contractor === 'VKS');
     const tlnRows = rows.filter(r => r.contractor === 'TLN');
 
@@ -934,7 +917,6 @@ function renderML(rows) {
         <th>🔖 Stamping</th><th>📦 Packing (Bags)</th><th>👷 Labour</th><th>🪨 Rm Consumed</th>
     </tr></thead><tbody>`;
 
-    // VKS Section
     if (vksRows.length > 0) {
         html += `<tr><td colspan="11" style="background:linear-gradient(90deg,#856404,#b8860b);color:#fff;font-weight:700;font-size:12px;padding:8px 14px;letter-spacing:1px;">
             🔵 VKS CONTRACTOR — ${vksRows.length} Records
@@ -942,7 +924,6 @@ function renderML(rows) {
         vksRows.forEach((r,i) => {
             html += buildMLRow(r, i);
         });
-        // VKS subtotal
         const vCut = vksRows.reduce((s,r)=>s+r.cutting,0);
         const vGri = vksRows.reduce((s,r)=>s+r.grinding,0);
         const vSta = vksRows.reduce((s,r)=>s+r.totalStamping,0);
@@ -959,7 +940,6 @@ function renderML(rows) {
         </tr>`;
     }
 
-    // TLN Section
     if (tlnRows.length > 0) {
         html += `<tr><td colspan="11" style="background:linear-gradient(90deg,#1e40af,#3b82f6);color:#fff;font-weight:700;font-size:12px;padding:8px 14px;letter-spacing:1px;">
             🟡 TLN CONTRACTOR — ${tlnRows.length} Records
@@ -967,7 +947,6 @@ function renderML(rows) {
         tlnRows.forEach((r,i) => {
             html += buildMLRow(r, i);
         });
-        // TLN subtotal
         const tCutT = tlnRows.reduce((s,r)=>s+r.cutting,0);
         const tGriT = tlnRows.reduce((s,r)=>s+r.grinding,0);
         const tStaT = tlnRows.reduce((s,r)=>s+r.totalStamping,0);
@@ -984,7 +963,6 @@ function renderML(rows) {
         </tr>`;
     }
 
-    // Grand Total
     html += `<tr class="total-row">
         <td colspan="5">📊 GRAND TOTAL (VKS + TLN)</td>
         <td class="col-num">${fmt(tCut)}</td>
@@ -1016,16 +994,14 @@ function buildMLRow(r, i) {
 }
 
 // ============================================================
-// ✅ ROLLING MILL — FIXED COST FORMULA
+// ✅ ROLLING MILL - Uses getProductionData2()
 // ============================================================
 async function loadRollingMill(force=false) {
     if (DATA.rollingmill.length && !force) { renderRM(DATA.rollingmill); return; }
     setLoading('rm-refresh-btn', true);
     showState('rm-table','loading','⚙️','Google Sheets se data aa raha hai...');
     try {
-        const json = await fetchSheet('rollingmill');
-        // Rolling Mill: Row 1 = Headers, Data from Row 2
-        // Headers: Date|Drawing No|Raw Material|Miss Roll(pcs)|Miss Roll(MT)|Endcut(MT)|5% Less|Net Production(MT)|Coal(MT)|Coal Update|Labour|Electric|Electric Cost/tone|Coal Cost/tone
+        const json = await fetchSheet('getProductionData2');
         DATA.rollingmill = json.data.map(r => {
             const keys = Object.keys(r);
             return {
@@ -1041,7 +1017,6 @@ async function loadRollingMill(force=false) {
                 coalUpdate:  r[keys[9]] !== '' && r[keys[9]] !== null ? r[keys[9]] : '—',
                 labour:      toN(r[keys[10]]),
                 electric:    toN(r[keys[11]]),
-                // ✅ Sheet ke original cost values (reference ke liye)
                 elecCostOrig: toN(r[keys[12]]),
                 coalCostOrig: toN(r[keys[13]])
             };
@@ -1086,9 +1061,6 @@ function renderRM(rows) {
     const tMPcs = rows.reduce((s,r) => s+r.missRollPcs, 0);
     const tMMT  = rows.reduce((s,r) => s+r.missRollMT, 0);
 
-    // ✅ FIXED FORMULA:
-    // Electric Cost per Tone = Total Electric Units / Total Net Production
-    // Coal Cost per Tone     = Total Coal (MT)      / Total Net Production
     const elecCostPerTone = tNet > 0 ? tElec / tNet : 0;
     const coalCostPerTone = tNet > 0 ? tCoal / tNet : 0;
 
@@ -1098,8 +1070,6 @@ function renderRM(rows) {
     document.getElementById('rm-s4').textContent   = fmt(tElec);
     document.getElementById('rm-s5').textContent   = fmt(tMPcs);
     document.getElementById('rm-s5mt').textContent = fmt(tMMT, 3) + ' MT';
-
-    // ✅ Updated Cards with correct formula
     document.getElementById('rm-s6').textContent = fmt(elecCostPerTone, 2);
     document.getElementById('rm-s7').textContent = fmt(coalCostPerTone, 4);
 
@@ -1118,7 +1088,6 @@ function renderRM(rows) {
     </tr></thead><tbody>`;
 
     rows.forEach((r,i) => {
-        // ✅ Per row bhi correct formula
         const rowElecPerT = r.netProd > 0 ? r.electric / r.netProd : 0;
         const rowCoalPerT = r.netProd > 0 ? r.coal    / r.netProd : 0;
 
