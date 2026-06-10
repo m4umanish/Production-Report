@@ -445,8 +445,8 @@
                     <div class="stat-card card-purple">
                         <div class="stat-header"><div class="stat-icon-box">&#129683;</div><span class="stat-badge">COST/T</span></div>
                         <div class="stat-value-sm" id="rm-s7">--</div>
-                        <div class="stat-label">Coal Cost / Tone (Rs.)</div>
-                        <div class="stat-sub">Formula: Total Coal / Net Production</div>
+                        <div class="stat-label">Coal Consumption / Tone (MT)</div>
+                        <div class="stat-sub">Formula: Total Coal Consumption / Net Production</div>
                     </div>
                 </div>
                 <div class="table-section">
@@ -781,7 +781,7 @@ function renderRM(rows) {
     document.getElementById('rm-s5').textContent  = fmt(tMPcs);
     document.getElementById('rm-s5mt').textContent= fmt(tMMT,3)+' MT';
     document.getElementById('rm-s6').textContent  = fmt(elecCPT,2);
-    document.getElementById('rm-s7').textContent  = fmt(coalCPT,4);
+    document.getElementById('rm-s7').textContent  = fmt(coalCPT,4)+' MT';
     document.getElementById('rm-count').textContent = rows.length+' records found';
     if (!rows.length) { showState('rm-table','empty','','Koi record nahi mila'); return; }
     let html = '<table class="data-table"><thead><tr><th>#</th><th>Date</th><th>Drawing No</th><th>Raw Material</th><th>Miss Roll (pcs)</th><th>Miss Roll (MT)</th><th>Endcut (MT)</th><th>5% Less</th><th>Net Prod (MT)</th><th>Coal (MT)</th><th>Coal Update</th><th>Labour</th><th>Electric</th><th>Elec/T</th><th>Coal/T</th></tr></thead><tbody>';
